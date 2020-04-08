@@ -20,7 +20,21 @@ const validateUuid = (req, res, next) => {
 	return next()
 }
 
-app.use('/repositories/:id', validateUuid)
+const validateRepository = (request, response, next) => {
+	const { id } = request.params
+
+	const index = repositories.findIndex(rep => rep.id === id)
+
+	if (index < 0) {
+		return response.status(400).send({ error: 'Repository not found.' })
+	}
+
+	request.repositoryIndex = index
+
+	return next()
+}
+
+app.use('/repositories/:id', validateUuid, validateRepository)
 
 app.get("/repositories", (request, response) => {
 	return response.json(repositories)
@@ -36,14 +50,8 @@ app.post("/repositories", (request, response) => {
 });
 
 app.put("/repositories/:id", (request, response) => {
-	const { id } = request.params
+	const { repositoryIndex: index } = request
 	const { title, url, techs } = request.body
-
-	const index = repositories.findIndex(rep => rep.id === id)
-
-	if (index < 0) {
-		return response.status(400).send({ error: 'Repository not found.' })
-	}
 
 	repositories[index] = { ...repositories[index], title, url, techs }
 
@@ -51,13 +59,7 @@ app.put("/repositories/:id", (request, response) => {
 });
 
 app.delete("/repositories/:id", (request, response) => {
-	const { id } = request.params
-
-	const index = repositories.findIndex(rep => rep.id === id)
-
-	if (index < 0) {
-		return response.status(400).send({ error: 'Repository not found.' })
-	}
+	const { repositoryIndex: index } = request
 
 	repositories.splice(index, 1)
 
@@ -65,13 +67,7 @@ app.delete("/repositories/:id", (request, response) => {
 });
 
 app.post("/repositories/:id/like", (request, response) => {
-	const { id } = request.params
-
-	const index = repositories.findIndex(rep => rep.id === id)
-
-	if (index < 0) {
-		return response.status(400).send({ error: 'Repository not found.' })
-	}
+	const { repositoryIndex: index } = request
 
 	repositories[index].likes += 1
 
